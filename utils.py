@@ -54,35 +54,21 @@ class temp(object):
     SETTINGS = {}
     IMDB_CAP = {}
 
-async def create_force_sub_buttons(bot, message, AUTH_CHANNELS, is_req_subscribed):
-    not_subscribed = []
-    for channel in AUTH_CHANNELS:
-        if not await is_req_subscribed(bot, message, channel):
-            try:
-                invite_link = await bot.create_chat_invite_link(int(channel), creates_join_request=True)
-                channel_title = (await bot.get_chat(channel)).title
-                not_subscribed.append((channel, invite_link.invite_link, channel_title))
-            except Exception as e:
-                logger.exception(f"Error creating invite link for channel {channel}: {e}")
-                continue
+async def is_req_subscribed(bot, query):
+    if await db.find_join_req(query.from_user.id):
+        return True
+    try:
+        user = await bot.get_chat_member(AUTH_CHANNELS, query.from_user.id)
+    except UserNotParticipant:
+        pass
+    except Exception as e:
+        logger.exception(e)
+    else:
+        if user.status != enums.ChatMemberStatus.BANNED:
+            return True
 
-    if not not_subscribed:
-        return None
-
-    btn = [
-        [types.InlineKeyboardButton(f"📌 Join {channel[2]}", url=channel[1])]
-        for channel in not_subscribed
-    ]
-
-    if len(message.text.split()) > 1 and message.text.split()[1] != "subscribe":
-        try:
-            kk, file_id = message.text.split()[1].split("_", 1)
-            btn.append([types.InlineKeyboardButton("↻ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
-        except (IndexError, ValueError):
-            btn.append([types.InlineKeyboardButton("↻ Try Again", url=f"https://t.me/{temp.U_NAME}?start={message.text.split()[1]}")])
-
-    return types.InlineKeyboardMarkup(btn)
-
+    return False
+    
 async def get_poster(query, bulk=False, id=False, file=None):
     if not id:
         # https://t.me/GetTGLink/4183
