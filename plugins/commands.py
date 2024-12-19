@@ -84,16 +84,16 @@ async def start(client, message):
         )
         return
         
-    if AUTH_CHANNELS:  # Assume AUTH_CHANNELS is a list of channel IDs or usernames
-    not_subscribed = []
-    for channel in AUTH_CHANNELS:
-        if not await is_req_subscribed(client, message, channel):
-            try:
-                invite_link = await client.create_chat_invite_link(int(channel), creates_join_request=True)
-                not_subscribed.append((channel, invite_link.invite_link))
-            except ChatAdminRequired:
-                logger.error(f"Make sure Bot is admin in Forcesub channel: {channel}")
-                continue
+    if AUTH_CHANNELS:
+        not_subscribed = []
+        for channel in AUTH_CHANNELS:
+            if not await is_req_subscribed(client, message, channel):
+                try:
+                    invite_link = await client.create_chat_invite_link(int(channel), creates_join_request=True)
+                    not_subscribed.append((channel, invite_link.invite_link))
+                except ChatAdminRequired:
+                    logger.error(f"Make sure Bot is admin in Forcesub channel: {channel}")
+                    continue
 
     if not_subscribed:
         # Create buttons for each channel
