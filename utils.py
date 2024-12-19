@@ -54,8 +54,6 @@ class temp(object):
     SETTINGS = {}
     IMDB_CAP = {}
 
-from telebot import types
-
 async def create_force_sub_buttons(bot, message, AUTH_CHANNELS, is_req_subscribed):
     not_subscribed = []
     for channel in AUTH_CHANNELS:
