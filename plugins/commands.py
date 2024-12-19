@@ -83,6 +83,34 @@ async def start(client, message):
             parse_mode=enums.ParseMode.HTML
         )
         return
+
+    if AUTH_CHANNELS and not await is_req_subscribed(client, message):
+        try:
+            invite_link = await client.create_chat_invite_link(int(AUTH_CHANNELS), creates_join_request=True)
+        except ChatAdminRequired:
+            logger.error("Make sure Bot is admin in Forcesub channel")
+            return
+        btn = [
+            [
+                InlineKeyboardButton(
+                    "📌 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇꜱ ᴄʜᴀɴɴᴇʟ 📌", url=invite_link.invite_link
+                )
+            ]
+        ]
+
+        if message.command[1] != "subscribe":
+            try:
+                kk, file_id = message.command[1].split("_", 1)
+                btn.append([InlineKeyboardButton("↻ Tʀʏ Aɢᴀɪɴ", callback_data=f"checksub#{kk}#{file_id}")])
+            except (IndexError, ValueError):
+                btn.append([InlineKeyboardButton("↻ Tʀʏ Aɢᴀɪɴ", url=f"https://t.me/{temp.U_NAME}?start={message.command[1]}")])
+        await client.send_message(
+            chat_id=message.from_user.id,
+            text="ᴊᴏɪɴ ᴏᴜʀ ᴜᴘᴅᴀᴛᴇꜱ ᴄʜᴀɴɴᴇʟ ᴀɴᴅ ᴛʜᴇɴ ᴄʟɪᴄᴋ ᴏɴ ᴛʀʏ ᴀɢᴀɪɴ ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇꜱᴛᴇᴅ ꜰɪʟᴇ.",
+            reply_markup=InlineKeyboardMarkup(btn),
+            parse_mode=enums.ParseMode.MARKDOWN
+            )
+        return
         
     if len(message.command) == 2 and message.command[1] in ["subscribe", "error", "okay", "help"]:
         buttons = [[
@@ -125,46 +153,7 @@ async def start(client, message):
             reply_markup=reply_markup,
             parse_mode=enums.ParseMode.HTML
         )
-        return
-
-    if AUTH_CHANNELS:
-        not_subscribed = []
-        for channel in AUTH_CHANNELS:
-            if not await is_req_subscribed(bot, message, channel):
-                try:
-                    invite_link = await bot.create_chat_invite_link(int(channel), creates_join_request=True)
-                    channel_title = (await bot.get_chat(channel)).title  # Use await if necessary
-                    not_subscribed.append((channel, invite_link.invite_link, channel_title))
-                except Exception as e:
-                    logger.exception(f"Error creating invite link for channel {channel}: {e}")
-                    continue
-
-    if not_subscribed:
-        btn = [
-            [types.InlineKeyboardButton(f"📌 Join {channel[2]}", url=channel[1])]
-            for channel in not_subscribed
-        ]
-
-        if len(message.text.split()) > 1 and message.text.split()[1] != "subscribe":
-            try:
-                kk, file_id = message.text.split()[1].split("_", 1)
-                btn.append([types.InlineKeyboardButton("↻ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
-            except (IndexError, ValueError):
-                btn.append([types.InlineKeyboardButton("↻ Try Again", url=f"https://t.me/{temp.U_NAME}?start={message.text.split()[1]}")])
-
-        try:
-            await bot.send_message(
-                chat_id=message.chat.id,
-                text="Hello! You need to join the following channels to use this bot. Please click the buttons below to join.",
-                reply_markup=types.InlineKeyboardMarkup(btn),
-                parse_mode="Markdown"
-            )
-        except Exception as e:
-            logger.exception(f"Failed to send ForceSub message: {e}")
-            await bot.send_message(
-                chat_id=message.chat.id,
-                text="An error occurred while processing your request. Please try again later."
-            )
+        return   
         
     if len(message.command) == 2 and message.command[1] in ["premium"]:
         buttons = [[
