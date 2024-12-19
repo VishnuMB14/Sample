@@ -130,15 +130,14 @@ async def start(client, message):
     if AUTH_CHANNELS:
         not_subscribed = []
         for channel in AUTH_CHANNELS:
-            if not is_req_subscribed(bot, message, channel):
+            if not await is_req_subscribed(bot, message, channel):
                 try:
-                    invite_link = bot.create_chat_invite_link(int(channel), creates_join_request=True)
-                    channel_title = bot.get_chat(channel).title # Get channel title (replace with correct method)
+                    invite_link = await bot.create_chat_invite_link(int(channel), creates_join_request=True)
+                    channel_title = (await bot.get_chat(channel)).title  # Use await if necessary
                     not_subscribed.append((channel, invite_link.invite_link, channel_title))
                 except Exception as e:
                     logger.exception(f"Error creating invite link for channel {channel}: {e}")
                     continue
-
 
     if not_subscribed:
         btn = [
@@ -154,19 +153,18 @@ async def start(client, message):
                 btn.append([types.InlineKeyboardButton("↻ Try Again", url=f"https://t.me/{temp.U_NAME}?start={message.text.split()[1]}")])
 
         try:
-            bot.send_message(
+            await bot.send_message(
                 chat_id=message.chat.id,
                 text="Hello! You need to join the following channels to use this bot. Please click the buttons below to join.",
                 reply_markup=types.InlineKeyboardMarkup(btn),
                 parse_mode="Markdown"
             )
         except Exception as e:
-            logger.exception("Failed to send ForceSub message: %s", str(e))
-            bot.send_message(
+            logger.exception(f"Failed to send ForceSub message: {e}")
+            await bot.send_message(
                 chat_id=message.chat.id,
                 text="An error occurred while processing your request. Please try again later."
             )
-            return
         
     if len(message.command) == 2 and message.command[1] in ["premium"]:
         buttons = [[
