@@ -84,7 +84,7 @@ async def start(client, message):
         )
         return
         
-    if AUTH_CHANNELS:  # Assume AUTH_CHANNELS is a list of channel IDs
+    if AUTH_CHANNELS:  # Assume AUTH_CHANNELS is a list of channel IDs or usernames
     not_subscribed = []
     for channel in AUTH_CHANNELS:
         if not await is_req_subscribed(client, message, channel):
@@ -96,19 +96,24 @@ async def start(client, message):
                 continue
 
     if not_subscribed:
+        # Create buttons for each channel
         btn = [
-            [InlineKeyboardButton(f"📌 Join {channel}", url=link)]
-            for channel, link in not_subscribed
+            [InlineKeyboardButton("📌 Join Channel 1", url=not_subscribed[0][1])],
+            [InlineKeyboardButton("📌 Join Channel 2", url=not_subscribed[1][1])],
+            [InlineKeyboardButton("📢 Join Update Channel", url=not_subscribed[2][1])]
         ]
+
+        # Add a "Try Again" button
         if message.command[1] != "subscribe":
             try:
                 kk, file_id = message.command[1].split("_", 1)
                 btn.append([InlineKeyboardButton("↻ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
             except (IndexError, ValueError):
                 btn.append([InlineKeyboardButton("↻ Try Again", url=f"https://t.me/{temp.U_NAME}?start={message.command[1]}")])
+
         await client.send_message(
             chat_id=message.from_user.id,
-            text="You must join all required channels and then click 'Try Again' to proceed.",
+            text="Hello, you need to join the following channels to use this bot. Kindly click the buttons below to join.",
             reply_markup=InlineKeyboardMarkup(btn),
             parse_mode=enums.ParseMode.MARKDOWN
         )
