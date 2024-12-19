@@ -24,42 +24,6 @@ BATCH_FILES = {}
 
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client, message):
-    if AUTH_CHANNELS:
-        not_subscribed = []
-        for channel in AUTH_CHANNELS:
-            if not await is_req_subscribed(client, message, channel):
-                try:
-                    invite_link = await client.create_chat_invite_link(int(channel), creates_join_request=True)
-                    not_subscribed.append((channel, invite_link.invite_link))
-                except ChatAdminRequired:
-                    logger.error(f"Make sure Bot is admin in Forcesub channel: {channel}")
-                    continue
-
-    if not_subscribed:
-        # Create buttons for each channel
-        btn = [
-            [InlineKeyboardButton("📌 Join Channel 1", url=not_subscribed[0][1])],
-            [InlineKeyboardButton("📌 Join Channel 2", url=not_subscribed[1][1])],
-            [InlineKeyboardButton("📢 Join Update Channel", url=not_subscribed[2][1])]
-        ]
-
-        # Add a "Try Again" button
-        if message.command[1] != "subscribe":
-            try:
-                kk, file_id = message.command[1].split("_", 1)
-                btn.append([InlineKeyboardButton("↻ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
-            except (IndexError, ValueError):
-                btn.append([InlineKeyboardButton("↻ Try Again", url=f"https://t.me/{temp.U_NAME}?start={message.command[1]}")])
-
-        await client.send_message(
-            chat_id=message.from_user.id,
-            text="Hello, you need to join the following channels to use this bot. Kindly click the buttons below to join.",
-            reply_markup=InlineKeyboardMarkup(btn),
-            parse_mode=enums.ParseMode.MARKDOWN
-        )
-        return
-        except Exception as e:
-            print(e)      
     if message.chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
         buttons = [[
                     InlineKeyboardButton('☆ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ☆', url=f'http://t.me/{temp.U_NAME}?startgroup=true')
@@ -162,6 +126,44 @@ async def start(client, message):
             parse_mode=enums.ParseMode.HTML
         )
         return
+
+    if AUTH_CHANNELS:
+        not_subscribed = []
+        for channel in AUTH_CHANNELS:
+            if not await is_req_subscribed(client, message, channel):
+                try:
+                    invite_link = await client.create_chat_invite_link(int(channel), creates_join_request=True)
+                    not_subscribed.append((channel, invite_link.invite_link))
+                except ChatAdminRequired:
+                    logger.error(f"Make sure Bot is admin in Forcesub channel: {channel}")
+                    continue
+
+    if not_subscribed:
+        # Create buttons for each channel
+        btn = [
+            [InlineKeyboardButton("📌 Join Channel 1", url=not_subscribed[0][1])],
+            [InlineKeyboardButton("📌 Join Channel 2", url=not_subscribed[1][1])],
+            [InlineKeyboardButton("📢 Join Update Channel", url=not_subscribed[2][1])]
+        ]
+
+        # Add a "Try Again" button
+        if message.command[1] != "subscribe":
+            try:
+                kk, file_id = message.command[1].split("_", 1)
+                btn.append([InlineKeyboardButton("↻ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
+            except (IndexError, ValueError):
+                btn.append([InlineKeyboardButton("↻ Try Again", url=f"https://t.me/{temp.U_NAME}?start={message.command[1]}")])
+
+        await client.send_message(
+            chat_id=message.from_user.id,
+            text="Hello, you need to join the following channels to use this bot. Kindly click the buttons below to join.",
+            reply_markup=InlineKeyboardMarkup(btn),
+            parse_mode=enums.ParseMode.MARKDOWN
+        )
+        return
+        except Exception as e:
+            print(e)      
+    
         
         
     if len(message.command) == 2 and message.command[1] in ["premium"]:
