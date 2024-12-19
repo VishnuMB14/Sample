@@ -54,19 +54,26 @@ class temp(object):
     SETTINGS = {}
     IMDB_CAP = {}
 
-async def is_req_subscribed(bot, query, channel_id):
-    if await db.find_join_req(query.from_user.id):
+async def is_req_subscribed(bot, message, channel_id):
+    """
+    Check if the user is subscribed to the given channel.
+    """
+    if await db.find_join_req(message.from_user.id):
         return True
+
     try:
-        user = await bot.get_chat_member(channel_id, query.from_user.id)
+        # Check if the user is a member of the channel
+        user = await bot.get_chat_member(channel_id, message.from_user.id)
     except UserNotParticipant:
-        pass
+        # User is not a member
+        return False
     except Exception as e:
+        # Log any other exceptions
         logger.exception(e)
+        return False
     else:
-        if user.status != enums.ChatMemberStatus.BANNED:
-            return True
-    return False
+        # Return True if the user is not banned
+        return user.status != enums.ChatMemberStatus.BANNED
 
 async def get_poster(query, bulk=False, id=False, file=None):
     if not id:
