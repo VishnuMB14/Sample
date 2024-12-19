@@ -1,6 +1,6 @@
 import logging
 from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait, UserIsBlocked, PeerIdInvalid
-from info import AUTH_CHANNEL, LONG_IMDB_DESCRIPTION, MAX_LIST_ELM, SHORTLINK_URL, SHORTLINK_API, IS_SHORTLINK, LOG_CHANNEL, TUTORIAL, GRP_LNK, CHNL_LNK, CUSTOM_FILE_CAPTION
+from info import AUTH_CHANNELS, LONG_IMDB_DESCRIPTION, MAX_LIST_ELM, SHORTLINK_URL, SHORTLINK_API, IS_SHORTLINK, LOG_CHANNEL, TUTORIAL, GRP_LNK, CHNL_LNK, CUSTOM_FILE_CAPTION
 from imdb import Cinemagoer 
 import asyncio
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
@@ -54,20 +54,26 @@ class temp(object):
     SETTINGS = {}
     IMDB_CAP = {}
 
+# ... other imports ...
+from info import AUTH_CHANNELS #Import AUTH_CHANNELS
+
 async def is_req_subscribed(bot, query):
     if await db.find_join_req(query.from_user.id):
         return True
-    try:
-        user = await bot.get_chat_member(AUTH_CHANNEL, query.from_user.id)
-    except UserNotParticipant:
-        pass
-    except Exception as e:
-        logger.exception(e)
-    else:
-        if user.status != enums.ChatMemberStatus.BANNED:
-            return True
 
-    return False
+    for auth_channel in AUTH_CHANNELS:
+        try:
+            user = await bot.get_chat_member(auth_channel, query.from_user.id)
+        except UserNotParticipant:
+            continue  # User not in this channel, check the next one
+        except Exception as e:
+            logger.exception(f"Error checking channel {auth_channel}: {e}")
+            continue # Skip this channel if an error occurs
+        else:
+            if user.status != enums.ChatMemberStatus.BANNED:
+                return True  # User is a member of at least one channel
+
+    return False  # User is not a member of any of the authentication channels
 
 async def get_poster(query, bulk=False, id=False, file=None):
     if not id:
