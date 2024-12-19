@@ -130,41 +130,43 @@ async def start(client, message):
     if AUTH_CHANNELS:
         not_subscribed = []
         for channel in AUTH_CHANNELS:
-            if not await is_req_subscribed(client, message, channel):
+            if not is_req_subscribed(bot, message, channel):
                 try:
-                    invite_link = await client.create_chat_invite_link(int(channel), creates_join_request=True)
-                    not_subscribed.append((channel, invite_link.invite_link))
-                except ChatAdminRequired:
-                    logger.error(f"Make sure Bot is admin in Forcesub channel: {channel}")
+                    invite_link = bot.create_chat_invite_link(int(channel), creates_join_request=True)
+                    channel_title = bot.get_chat(channel).title # Get channel title (replace with correct method)
+                    not_subscribed.append((channel, invite_link.invite_link, channel_title))
+                except Exception as e:
+                    logger.exception(f"Error creating invite link for channel {channel}: {e}")
                     continue
 
+
     if not_subscribed:
-        # Create buttons for each channel
         btn = [
-            [InlineKeyboardButton("📌 Join Channel 1", url=not_subscribed[0][1])],
-            [InlineKeyboardButton("📌 Join Channel 2", url=not_subscribed[1][1])],
-            [InlineKeyboardButton("📢 Join Update Channel", url=not_subscribed[2][1])]
+            [types.InlineKeyboardButton(f"📌 Join {channel[2]}", url=channel[1])]
+            for channel in not_subscribed
         ]
 
-        # Add a "Try Again" button
-        if message.command[1] != "subscribe":
+        if len(message.text.split()) > 1 and message.text.split()[1] != "subscribe":
             try:
-                kk, file_id = message.command[1].split("_", 1)
-                btn.append([InlineKeyboardButton("↻ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
+                kk, file_id = message.text.split()[1].split("_", 1)
+                btn.append([types.InlineKeyboardButton("↻ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
             except (IndexError, ValueError):
-                btn.append([InlineKeyboardButton("↻ Try Again", url=f"https://t.me/{temp.U_NAME}?start={message.command[1]}")])
+                btn.append([types.InlineKeyboardButton("↻ Try Again", url=f"https://t.me/{temp.U_NAME}?start={message.text.split()[1]}")])
 
-        await client.send_message(
-            chat_id=message.from_user.id,
-            text="Hello, you need to join the following channels to use this bot. Kindly click the buttons below to join.",
-            reply_markup=InlineKeyboardMarkup(btn),
-            parse_mode=enums.ParseMode.MARKDOWN
-        )
-        return
+        try:
+            bot.send_message(
+                chat_id=message.chat.id,
+                text="Hello! You need to join the following channels to use this bot. Please click the buttons below to join.",
+                reply_markup=types.InlineKeyboardMarkup(btn),
+                parse_mode="Markdown"
+            )
         except Exception as e:
-            print(e)      
-    
-        
+            logger.exception("Failed to send ForceSub message: %s", str(e))
+            bot.send_message(
+                chat_id=message.chat.id,
+                text="An error occurred while processing your request. Please try again later."
+            )
+            return
         
     if len(message.command) == 2 and message.command[1] in ["premium"]:
         buttons = [[
